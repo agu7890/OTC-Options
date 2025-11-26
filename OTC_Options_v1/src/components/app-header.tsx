@@ -28,11 +28,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
               {links.map(({ label, path }) => (
                 <li key={path}>
                   <Link
-                    className={
-                      label === 'My Workspace'
-                        ? 'text-black !important'
-                        : `hover:text-neutral-500 dark:hover:text-white ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`
-                    }
+                    className={`hover:text-neutral-500 dark:hover:text-white ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`}
                     href={path}
                   >
                     {label}

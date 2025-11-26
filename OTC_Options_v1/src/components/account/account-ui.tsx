@@ -1,10 +1,20 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, PublicKey, Message, VersionedMessage } from '@solana/web3.js'
 import { RefreshCw } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState, useEffect } from 'react'
+
+type TxDetail = {
+  signature: string;
+  timestamp: string;
+  fee: string;
+  confirmationStatus: string;
+  transferAmount: string;
+  creditOrDebit: string;
+  err: unknown;
+};
 import { useConnection } from '@solana/wallet-adapter-react'
 
 import { useCluster } from '../cluster/cluster-data-access'
@@ -189,7 +199,7 @@ export function AccountTransactions({ address }: { address: PublicKey }) {
   const [showAll, setShowAll] = useState(false);
   const query = useGetSignatures({ address });
   const { connection } = useConnection();
-  const [txDetails, setTxDetails] = useState<any[]>([]);
+  const [txDetails, setTxDetails] = useState<TxDetail[]>([]);
   const [loading, setLoading] = useState(false);
 
   const items = useMemo(() => {
@@ -216,8 +226,18 @@ export function AccountTransactions({ address }: { address: PublicKey }) {
               // Find the account index for the current wallet
               let creditOrDebit = '-';
               let transferAmount = 0;
-              if (tx?.meta?.postBalances && tx?.meta?.preBalances && tx?.transaction?.message?.accountKeys) {
-                const accountIndex = tx.transaction.message.accountKeys.findIndex(
+              if (tx?.meta?.postBalances && tx?.meta?.preBalances && tx?.transaction?.message) {
+                let keys: PublicKey[] = [];
+                const message = tx.transaction.message;
+                // VersionedMessage has getAccountKeys(), Message has accountKeys
+                if ('getAccountKeys' in message && typeof message.getAccountKeys === 'function') {
+                  // VersionedMessage
+                  keys = message.getAccountKeys().staticAccountKeys;
+                } else if ('accountKeys' in message && Array.isArray((message as Message).accountKeys)) {
+                  // Legacy Message
+                  keys = (message as Message).accountKeys;
+                }
+                const accountIndex = keys.findIndex(
                   (k) => k.toBase58 && address && k.toBase58() === address.toBase58()
                 );
                 if (accountIndex !== -1) {
